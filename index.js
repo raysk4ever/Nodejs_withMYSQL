@@ -33,9 +33,13 @@ app.delete("/:restro_id/:order_id", (req, res) => {
   const query = `DELETE FROM ORDERS WHERE id = ? AND restro_id = ?`;
   mysqlConnection.query(query, [order_id, restro_id], (err, rows, fields) => {
     if (!err) {
-      if (rows.affectedRows != 0) res.send("DELETED SUCCESSFULLY");
-      res.send("NO SUCH ORDER FOUND FOR RESTRO ID " + restro_id);
-    } else res.send("FAILD, ERROR: " + err);
+      if (rows.affectedRows != 0) return res.send("DELETED SUCCESSFULLY");
+      else {
+        return res.send("NO SUCH ORDER FOUND FOR RESTRO ID " + restro_id);
+      }
+    } else {
+      return res.send("FAILD, ERROR: " + err);
+    }
   });
 });
 
@@ -44,9 +48,14 @@ app.delete("/orders", (req, res) => {
   const query = `DELETE FROM ORDERS WHERE id = ? AND restro_id = ?`;
   mysqlConnection.query(query, [id, restro_id], (err, rows, fields) => {
     if (!err) {
-      if (rows.affectedRows != 0) res.send("DELETED SUCCESSFULLY");
-      res.send("INVALID DETAILS");
-    } else res.send(err);
+      if (rows.affectedRows != 0) {
+        return res.send("DELETED SUCCESSFULLY");
+      } else {
+        return res.send("INVALID DETAILS");
+      }
+    } else {
+      return res.send(err);
+    }
   });
 });
 
@@ -76,5 +85,16 @@ app.put("/orders", (req, res) => {
     }
   );
 });
-
+app.put("/:restro_id/:order_id", (req, res) => {
+  const { id, restro_id, ...rest } = req.body;
+  const query = `UPDATE ORDERS SET ? WHERE id=? AND restro_id=?`;
+  mysqlConnection.query(
+    query,
+    [rest, req.params.order_id, req.params.restro_id],
+    (err, rows, fields) => {
+      if (!err) res.send(rows);
+      else res.send("ERROR" + err);
+    }
+  );
+});
 app.listen(3000, () => console.log(`connected to server`));
