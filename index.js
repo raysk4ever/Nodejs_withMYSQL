@@ -19,81 +19,62 @@ mysqlConnection.connect(err => {
   }
 });
 
-app.get("/orders", (req, res) => {
-  const query = "SELECT * FROM ORDERS";
-  //   const query = `SELECT o.id as order_id, o.title, o.prize, r.title as restro_name, r.address FROM orders o, restorants r
-  //   WHERE o.restorant_id = r.restorant_id`;
-  mysqlConnection.query(query, (err, rows, fields) => {
-    if (!err) {
-      res.send(rows);
-    } else {
-      res.send(err);
-    }
+app.get("/orders/:restroId", (req, res) => {
+  const restro_id = req.params.restroId;
+  const query = `SELECT * FROM ORDERS WHERE restro_id = ?`;
+  mysqlConnection.query(query, [restro_id], (err, rows, fields) => {
+    if (!err) res.send(rows);
+    else res.send(err);
   });
 });
 
-app.get("/orders/:id", (req, res) => {
-  const id = req.params.id;
-  mysqlConnection.query(
-    `SELECT * FROM orders o
-     WHERE o.id = ? `,
-    [id],
-    (err, rows, fields) => {
-      if (!err) {
-        res.send(rows);
-      } else {
-        res.send(err);
-      }
-    }
-  );
+app.delete("/:restro_id/:order_id", (req, res) => {
+  const { restro_id, order_id } = req.params;
+  const query = `DELETE FROM ORDERS WHERE id = ? AND restro_id = ?`;
+  mysqlConnection.query(query, [order_id, restro_id], (err, rows, fields) => {
+    if (!err) {
+      if (rows.affectedRows != 0) res.send("DELETED SUCCESSFULLY");
+      res.send("NO SUCH ORDER FOUND FOR RESTRO ID " + restro_id);
+    } else res.send("FAILD, ERROR: " + err);
+  });
+});
+
+app.delete("/orders", (req, res) => {
+  const { restro_id, id } = req.body;
+  const query = `DELETE FROM ORDERS WHERE id = ? AND restro_id = ?`;
+  mysqlConnection.query(query, [id, restro_id], (err, rows, fields) => {
+    if (!err) {
+      if (rows.affectedRows != 0) res.send("DELETED SUCCESSFULLY");
+      res.send("INVALID DETAILS");
+    } else res.send(err);
+  });
 });
 
 app.post("/orders", (req, res) => {
+  const { title, prize, restro_id } = req.body;
+  const query = `INSERT INTO ORDERS VALUES (?, ?, ?, ?)`;
+
   mysqlConnection.query(
-    `INSERT INTO orders values(?, ?, ?,?)`,
-    [null, req.body.title, req.body.prize, req.body.restorant_id],
+    query,
+    [null, title, prize, restro_id],
     (err, rows, fields) => {
-      if (!err) {
-        res.send(rows);
-      } else {
-        res.send(`Error: ${err}`);
-      }
+      if (!err) res.send(`ORDER SUCCESSFULLY`);
+      else res.send(`ERROR: ${err}`);
     }
   );
 });
 
-app.delete("/orders/:id", (req, res) => {
-  const id = req.params.id;
+app.put("/orders", (req, res) => {
+  const { id, restro_id, ...rest } = req.body;
+  const query = `UPDATE ORDERS SET ? WHERE id=? AND restro_id=?`;
   mysqlConnection.query(
-    "DELETE FROM orders WHERE id = ?",
-    [id],
+    query,
+    [rest, req.body.id, req.body.restro_id],
     (err, rows, fields) => {
-      if (!err) {
-        res.send("DELETED SUCCESSFULLY");
-      } else {
-        res.send(`Error: ${err}`);
-      }
+      if (!err) res.send(rows);
+      else res.send("ERROR" + err);
     }
   );
 });
 
-app.put("/orders/:id", (req, res) => {
-  const update = {
-    title: req.body.title,
-    prize: req.body.prize,
-    restorant_id: req.body.restorant_id
-  };
-  mysqlConnection.query(
-    "UPDATE orders set ? where id = ?",
-    [update, req.params.id],
-    (err, rows, fields) => {
-      if (!err) {
-        res.send(rows);
-      } else {
-        res.send(err);
-      }
-    }
-  );
-});
-
-app.listen(4000, () => console.log(`connected to server`));
+app.listen(3000, () => console.log(`connected to server`));
